@@ -129,7 +129,7 @@
   .login-msg { margin-top: .75rem; text-align: center; font-size: .85rem; min-height: 1.2rem; }
   .login-msg.error { color: var(--negative); }
   .login-msg.success { color: var(--positive); }
-  
+
   @media (max-width: 900px) {
     #app { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; flex-wrap: wrap; padding: .8rem 1rem; }
@@ -145,11 +145,8 @@
     .bar-label { width: 110px; }
     .bar-value { width: 90px; }
   }
-
-  /* Toggle switch para Liquidado/Previsto */
 #tx-liquidated:checked + span:first-of-type { background: var(--gold); }
 #tx-liquidated:checked ~ span:last-of-type { transform: translateX(20px); }
-  
 </style>
 </head>
 <body>
@@ -262,8 +259,8 @@
     <div class="modal-header"><h2 id="tx-modal-title">Novo lançamento</h2><button class="modal-close" onclick="closeModal('modal-transaction')">✕</button></div>
     <form onsubmit="return saveTransaction(event)">
       <div class="type-toggle">
-        <button type="button" id="tx-type-receita" class="active-income" onclick="('receita')">Receita ↑</button>
-        <button type="button" id="tx-type-despesa" onclick="('despesa')">Despesa ↓</button>
+        <button type="button" id="tx-type-receita" class="active-income" onclick="setFormType('receita')">Receita ↑</button>
+        <button type="button" id="tx-type-despesa" onclick="setFormType('despesa')">Despesa ↓</button>
       </div>
       <div class="form-grid">
         <label class="full">Descrição<input id="tx-desc" type="text" required></label>
@@ -280,7 +277,7 @@
             <option value="Boleto">Boleto</option>
           </select>
         </label>
-<label id="field-due-date" style="display:none;">Data de vencimento
+        <label id="field-due-date" style="display:none;">Data de vencimento
   <input id="tx-due-date" type="date">
 </label>
 
@@ -326,7 +323,6 @@
 </div>
 
 <script>
-  // =============== SUPABASE CONFIG ===============
   const SUPABASE_URL = 'https://ryxtudviluqdblttykgv.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eHR1ZHZpbHVxZGJsdHR5a2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTg3NDksImV4cCI6MjEwNjUzNDc0OX0.01k4V3PAVqeFFVEfv-G5oUgEVt8maXqnze_qZ_YsKZ8';
 
@@ -523,8 +519,8 @@
       const color = cat?.color || '#6b7280';
       const icon = cat?.icon || '•';
       const isIncome = t.type === 'receita';
-      return `<tr><td>${fmtDate(t.date)}</td><td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td><td><span class="cat-pill"><span class="cat-dot" style="background:${esc(color)}"></span>${esc(icon)} ${esc(cat?.name||'Sem categoria')}</span></td><td>${esc(t.payment)}</td><td style="text-align:right;font-weight:700;color:${isIncome?'var(--positive)':'var(--negative)'}">${isIncome?'+':'−'} ${fmtMoney(t.amount)}</td><td style="text-align:right"><div class="actions" style="justify-content:flex-end"><button class="icon-btn" onclick="openEditTransaction('${t.id}')">✎</button><button class="icon-btn danger" onclick="deleteTransaction('${t.id}')">🗑</button></div></td></tr>`;
-    }).join('');
+     return `<tr><td>${fmtDate(t.date)}${t.type === 'despesa' && t.due_date ? `<br><small style="color:var(--gold)">Venc: ${fmtDate(t.due_date)}</small>` : ''}${t.type === 'despesa' ? `<br><span class="tx-type-badge ${t.is_liquidated ? 'income' : 'expense'}">${t.is_liquidated ? '✓ Liquidado' : '○ Previsto'}</span>` : ''}</td><td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td><td>
+;}).join('');
   }
 
   function renderCategories() {
@@ -549,11 +545,14 @@
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
   });
 
-  function (type) {
+  function setFormType(type) {
     formType = type;
     document.getElementById('tx-type-receita').className = type === 'receita' ? 'active-income' : '';
     document.getElementById('tx-type-despesa').className = type === 'despesa' ? 'active-expense' : '';
     updateCategorySelect();
+    const show = type === 'despesa';
+  document.getElementById('field-due-date').style.display = show ? '' : 'none';
+  document.getElementById('field-liquidated').style.display = show ? '' : 'none';
   }
 
   function updateCategorySelect(selectedId) {
@@ -570,7 +569,7 @@
     document.getElementById('tx-amount').value = '';
     document.getElementById('tx-date').value = toISODate(new Date());
     document.getElementById('tx-payment').value = 'Pix';
-    ('receita');
+    setFormType('receita');
     openModal('modal-transaction');
   }
 
@@ -583,8 +582,10 @@
     document.getElementById('tx-amount').value = t.amount;
     document.getElementById('tx-date').value = t.date;
     document.getElementById('tx-payment').value = t.payment;
-    (t.type);
+    setFormType(t.type);
     updateCategorySelect(t.category_id);
+  document.getElementById('tx-due-date').value = t.due_date || '';
+  document.getElementById('tx-liquidated').checked = t.is_liquidated || false;
     openModal('modal-transaction');
   }
 
@@ -599,14 +600,16 @@
   async function saveTransaction(e) {
     e.preventDefault();
     const payload = {
-      description: document.getElementById('tx-desc').value.trim(),
-      amount: parseFloat(document.getElementById('tx-amount').value),
-      date: document.getElementById('tx-date').value,
-      type: formType,
-      payment: document.getElementById('tx-payment').value,
-      category_id: document.getElementById('tx-category').value || null,
-      user_id: user.id
-    };
+  description: document.getElementById('tx-desc').value.trim(),
+  amount: parseFloat(document.getElementById('tx-amount').value),
+  date: document.getElementById('tx-date').value,
+  type: formType,
+  payment: document.getElementById('tx-payment').value,
+  category_id: document.getElementById('tx-category').value || null,
+  user_id: user.id,
+  due_date: formType === 'despesa' ? document.getElementById('tx-due-date').value || null : null,
+  is_liquidated: formType === 'despesa' ? document.getElementById('tx-liquidated').checked : false
+};
     if (editingTransactionId) {
       const { data, error } = await sb.from('transactions').update(payload).eq('id', editingTransactionId).select().single();
       if (error) { alert('Erro ao atualizar: ' + error.message); return false; }
