@@ -129,7 +129,7 @@
   .login-msg { margin-top: .75rem; text-align: center; font-size: .85rem; min-height: 1.2rem; }
   .login-msg.error { color: var(--negative); }
   .login-msg.success { color: var(--positive); }
-
+  
   @media (max-width: 900px) {
     #app { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; flex-wrap: wrap; padding: .8rem 1rem; }
@@ -145,6 +145,11 @@
     .bar-label { width: 110px; }
     .bar-value { width: 90px; }
   }
+
+  /* Toggle switch para Liquidado/Previsto */
+#tx-liquidated:checked + span:first-of-type { background: var(--gold); }
+#tx-liquidated:checked ~ span:last-of-type { transform: translateX(20px); }
+  
 </style>
 </head>
 <body>
@@ -257,8 +262,8 @@
     <div class="modal-header"><h2 id="tx-modal-title">Novo lançamento</h2><button class="modal-close" onclick="closeModal('modal-transaction')">✕</button></div>
     <form onsubmit="return saveTransaction(event)">
       <div class="type-toggle">
-        <button type="button" id="tx-type-receita" class="active-income" onclick="setFormType('receita')">Receita ↑</button>
-        <button type="button" id="tx-type-despesa" onclick="setFormType('despesa')">Despesa ↓</button>
+        <button type="button" id="tx-type-receita" class="active-income" onclick="('receita')">Receita ↑</button>
+        <button type="button" id="tx-type-despesa" onclick="('despesa')">Despesa ↓</button>
       </div>
       <div class="form-grid">
         <label class="full">Descrição<input id="tx-desc" type="text" required></label>
@@ -275,6 +280,21 @@
             <option value="Boleto">Boleto</option>
           </select>
         </label>
+<label id="field-due-date" style="display:none;">Data de vencimento
+  <input id="tx-due-date" type="date">
+</label>
+
+<label id="field-liquidated" style="display:none;">Status
+  <div style="display:flex;align-items:center;gap:.75rem;margin-top:.25rem;">
+    <span style="font-size:.85rem;color:var(--muted);font-weight:500;">Previsto</span>
+    <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+      <input type="checkbox" id="tx-liquidated" style="opacity:0;width:0;height:0;">
+      <span style="position:absolute;inset:0;background:var(--border);border-radius:999px;transition:.2s;"></span>
+      <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+    </label>
+    <span style="font-size:.85rem;color:var(--muted);font-weight:500;">Liquidado</span>
+  </div>
+</label>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" onclick="closeModal('modal-transaction')">Cancelar</button>
@@ -529,7 +549,7 @@
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
   });
 
-  function setFormType(type) {
+  function (type) {
     formType = type;
     document.getElementById('tx-type-receita').className = type === 'receita' ? 'active-income' : '';
     document.getElementById('tx-type-despesa').className = type === 'despesa' ? 'active-expense' : '';
@@ -550,7 +570,7 @@
     document.getElementById('tx-amount').value = '';
     document.getElementById('tx-date').value = toISODate(new Date());
     document.getElementById('tx-payment').value = 'Pix';
-    setFormType('receita');
+    ('receita');
     openModal('modal-transaction');
   }
 
@@ -563,7 +583,7 @@
     document.getElementById('tx-amount').value = t.amount;
     document.getElementById('tx-date').value = t.date;
     document.getElementById('tx-payment').value = t.payment;
-    setFormType(t.type);
+    (t.type);
     updateCategorySelect(t.category_id);
     openModal('modal-transaction');
   }
