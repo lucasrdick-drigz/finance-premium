@@ -511,17 +511,17 @@
   }
 
   function renderTransactions() {
-    const tbody = document.getElementById('transactions-body');
-    const sorted = [...transactions].sort((a,b) => b.date.localeCompare(a.date));
-    if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-hint" style="text-align:center">Nenhum lançamento registrado.</td></tr>'; return; }
-    tbody.innerHTML = sorted.map(t => {
-      const cat = categories.find(c => c.id === t.category_id);
-      const color = cat?.color || '#6b7280';
-      const icon = cat?.icon || '•';
-      const isIncome = t.type === 'receita';
-     return `<tr><td>${fmtDate(t.date)}${t.type === 'despesa' && t.due_date ? `<br><small style="color:var(--gold)">Venc: ${fmtDate(t.due_date)}</small>` : ''}${t.type === 'despesa' ? `<br><span class="tx-type-badge ${t.is_liquidated ? 'income' : 'expense'}">${t.is_liquidated ? '✓ Liquidado' : '○ Previsto'}</span>` : ''}</td><td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td><td>
-;}).join('');
-  }
+  const tbody = document.getElementById('transactions-body');
+  const sorted = [...transactions].sort((a,b) => b.date.localeCompare(a.date));
+  if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-hint" style="text-align:center">Nenhum lançamento registrado.</td></tr>'; return; }
+  tbody.innerHTML = sorted.map(t => {
+    const cat = categories.find(c => c.id === t.category_id);
+    const color = cat?.color || '#6b7280';
+    const icon = cat?.icon || '•';
+    const isIncome = t.type === 'receita';
+    return `<tr><td>${fmtDate(t.date)}${t.type === 'despesa' && t.due_date ? `<br><small style="color:var(--gold)">Venc: ${fmtDate(t.due_date)}</small>` : ''}${t.type === 'despesa' ? `<br><span class="tx-type-badge ${t.is_liquidated ? 'income' : 'expense'}">${t.is_liquidated ? '✓ Liquidado' : '○ Previsto'}</span>` : ''}</td><td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td><td><span class="cat-pill"><span class="cat-dot" style="background:${esc(color)}"></span>${esc(icon)} ${esc(cat?.name||'Sem categoria')}</span></td><td>${esc(t.payment)}</td><td style="text-align:right;font-weight:700;color:${isIncome?'var(--positive)':'var(--negative)'}">${isIncome?'+':'−'} ${fmtMoney(t.amount)}</td><td style="text-align:right"><div class="actions" style="justify-content:flex-end"><button class="icon-btn" onclick="openEditTransaction('${t.id}')">✎</button><button class="icon-btn danger" onclick="deleteTransaction('${t.id}')">🗑</button></div></td></tr>`;
+  }).join('');
+}
 
   function renderCategories() {
     const render = (type, el) => {
