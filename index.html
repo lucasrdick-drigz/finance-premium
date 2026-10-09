@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head> 
+<head><script src="https://myhub.ia.br/canvas-vendor/tailwind.js"></script> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finance Premium</title>
@@ -9,7 +9,7 @@
   :root {
     --bg: #f4f4f5; --bg-sidebar: #171717; --card: #ffffff; --text: #27272a;
     --muted: #71717a; --border: #e4e4e7; --gold: #a87e1f; --gold-light: #d4af37;
-    --gold-soft: rgba(212,175,55,.12); --positive: #16a34a; --negative: #dc2626;
+    --gold-soft: rgba(212,175,55,.12); --positive: #16a34a; --negative: #dc2626; --warning: #f59e0b;
     --shadow: 0 8px 24px rgba(0,0,0,.08);
   }
   .dark {
@@ -30,18 +30,22 @@
   .nav-btn:hover { background: rgba(212,175,55,.08); color: #fff; }
   .nav-btn.active { background: rgba(212,175,55,.15); border-color: rgba(212,175,55,.45); color: #fafafa; font-weight: 600; box-shadow: inset 3px 0 0 var(--gold); }
   .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: .5rem; }
+  .user-email { font-size: .75rem; color: #71717a; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .theme-btn, .logout-btn { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .75rem; border-radius: .8rem; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: #d4d4d8; cursor: pointer; font-size: .9rem; font-weight: 500; transition: all .18s; }
   .theme-btn:hover, .logout-btn:hover { background: rgba(212,175,55,.1); color: #fff; }
-  .main { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; }
+  .main { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; min-width: 0; }
   .page { display: none; animation: fade .25s ease; }
   .page.active { display: block; }
   @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
   .page-header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; background: linear-gradient(90deg, var(--text), var(--gold-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
   .filter-box { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
   .filter-box label { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--muted); font-weight: 500; }
-  .filter-box input { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: .6rem; padding: .5rem .7rem; font-size: .9rem; outline: none; transition: border .2s; }
-  .filter-box input:focus { border-color: var(--gold); }
+  .filter-box input, .filter-box select { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: .6rem; padding: .5rem .7rem; font-size: .9rem; outline: none; transition: border .2s; }
+  .filter-box input:focus, .filter-box select:focus { border-color: var(--gold); }
+  .month-nav { display: flex; align-items: center; gap: .5rem; }
+  #month-label { min-width: 150px; text-align: center; font-weight: 700; text-transform: capitalize; font-size: .95rem; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 1.1rem; padding: 1.5rem; box-shadow: var(--shadow); }
   .card-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
   .card-header h2 { font-size: 1.1rem; font-weight: 700; }
@@ -52,8 +56,11 @@
   .summary-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold-light), transparent); }
   .summary-card .label { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: .6rem; }
   .summary-card .value { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
-  .summary-card .value.positive { color: var(--positive); }
-  .summary-card .value.negative { color: var(--negative); }
+  .summary-card.small { padding: 1.1rem 1.5rem; }
+  .summary-card.small .value { font-size: 1.3rem; }
+  .value.positive { color: var(--positive); }
+  .value.negative { color: var(--negative); }
+  .value.warning { color: var(--warning); }
   .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.25rem; }
   .segmented { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: .7rem; padding: .25rem; gap: .25rem; }
   .segmented button { background: none; border: none; padding: .45rem 1rem; border-radius: .5rem; cursor: pointer; font-weight: 600; color: var(--muted); font-size: .85rem; transition: all .18s; }
@@ -71,9 +78,14 @@
   .recent-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
   .recent-desc { font-weight: 600; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .recent-meta { font-size: .78rem; color: var(--muted); }
+  .recent-meta.late { color: var(--negative); font-weight: 700; }
+  .recent-meta.today { color: var(--warning); font-weight: 700; }
   .recent-amount { font-weight: 800; font-size: .95rem; white-space: nowrap; }
   .recent-amount.income { color: var(--positive); }
   .recent-amount.expense { color: var(--negative); }
+  .due-right { display: flex; align-items: center; gap: .75rem; }
+  .btn-sm { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); border-radius: .5rem; padding: .3rem .7rem; font-size: .78rem; font-weight: 700; cursor: pointer; }
+  .btn-sm:hover { background: var(--gold); color: #1a1a1a; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: .92rem; }
   th { text-align: left; color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; padding: .8rem .75rem; border-bottom: 2px solid var(--border); }
@@ -82,14 +94,17 @@
   .tx-type-badge { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px; }
   .tx-type-badge.income { background: rgba(22,163,74,.12); color: var(--positive); }
   .tx-type-badge.expense { background: rgba(220,38,38,.12); color: var(--negative); }
+  .tx-type-badge.late { background: rgba(245,158,11,.15); color: var(--warning); }
   .cat-pill { display: inline-flex; align-items: center; gap: .4rem; font-size: .83rem; }
   .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .actions { display: flex; gap: .4rem; }
-  .icon-btn { background: none; border: 1px solid var(--border); color: var(--muted); width: 32px; height: 32px; border-radius: .6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; font-size: .9rem; }
+  .icon-btn { background: none; border: 1px solid var(--border); color: var(--muted); width: 32px; height: 32px; border-radius: .6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; font-size: .9rem; flex-shrink: 0; }
   .icon-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+  .icon-btn.ok:hover { border-color: var(--positive); color: var(--positive); background: rgba(22,163,74,.08); }
   .icon-btn.danger:hover { border-color: var(--negative); color: var(--negative); background: rgba(220,38,38,.08); }
   .btn-gold { background: linear-gradient(135deg, #f5e07a, #d4af37 55%, #a87e1f); color: #1a1a1a; border: none; padding: .75rem 1.4rem; border-radius: .75rem; font-weight: 700; cursor: pointer; font-size: .92rem; letter-spacing: .01em; box-shadow: 0 4px 14px rgba(212,175,55,.3); transition: transform .15s, box-shadow .15s; }
   .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212,175,55,.45); }
+  .btn-gold:disabled { opacity: .6; cursor: wait; }
   .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); padding: .7rem 1.2rem; border-radius: .75rem; font-weight: 600; cursor: pointer; font-size: .9rem; }
   .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
   .cat-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
@@ -109,8 +124,8 @@
   .modal-close { background: none; border: 1px solid var(--border); color: var(--muted); width: 36px; height: 36px; border-radius: .7rem; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
   .modal-close:hover { border-color: var(--negative); color: var(--negative); }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .form-grid label { display: flex; flex-direction: column; gap: .45rem; font-size: .85rem; font-weight: 600; color: var(--muted); }
-  .form-grid label.full { grid-column: span 2; }
+  .form-grid label, .form-grid .field { display: flex; flex-direction: column; gap: .45rem; font-size: .85rem; font-weight: 600; color: var(--muted); }
+  .form-grid .full { grid-column: span 2; }
   .form-grid input, .form-grid select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: .65rem; padding: .7rem .8rem; font-size: .95rem; outline: none; font-weight: 500; transition: border .2s; }
   .form-grid input:focus, .form-grid select:focus { border-color: var(--gold); }
   .type-toggle { display: flex; gap: .5rem; margin-bottom: 1.25rem; background: var(--bg); padding: .35rem; border-radius: .8rem; border: 1px solid var(--border); }
@@ -118,14 +133,28 @@
   .type-toggle button.active-income { background: rgba(22,163,74,.15); color: var(--positive); }
   .type-toggle button.active-expense { background: rgba(220,38,38,.15); color: var(--negative); }
   .modal-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }
-  
+
+  /* Switch Previsto/Liquidado */
+  .switch-row { display: flex; align-items: center; gap: .75rem; margin-top: .25rem; font-size: .85rem; font-weight: 500; }
+  .switch { position: relative; width: 44px; height: 24px; cursor: pointer; display: inline-block; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch .track { position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: .2s; }
+  .switch .thumb { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .switch input:checked ~ .track { background: var(--gold); }
+  .switch input:checked ~ .thumb { transform: translateX(20px); }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--card); color: var(--text); border: 1px solid var(--gold); border-left-width: 4px; padding: .8rem 1.2rem; border-radius: .8rem; box-shadow: var(--shadow); font-size: .9rem; font-weight: 600; z-index: 100; opacity: 0; transform: translateY(10px); pointer-events: none; transition: all .25s; max-width: 320px; }
+  #toast.show { opacity: 1; transform: none; }
+  #toast.error { border-color: var(--negative); }
+
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .login-card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--border); border-radius: 1.2rem; padding: 2rem; box-shadow: var(--shadow); }
   .login-card .logo { justify-content: center; margin-bottom: 1.5rem; }
   .login-card h2 { text-align: center; margin-bottom: .5rem; }
   .login-card p { text-align: center; color: var(--muted); margin-bottom: 1.5rem; font-size: .9rem; }
   .login-card .form-grid { grid-template-columns: 1fr; }
-  .login-card .form-grid label.full { grid-column: span 1; }
+  .login-card .form-grid .full { grid-column: span 1; }
   .login-msg { margin-top: .75rem; text-align: center; font-size: .85rem; min-height: 1.2rem; }
   .login-msg.error { color: var(--negative); }
   .login-msg.success { color: var(--positive); }
@@ -136,21 +165,26 @@
     .nav { flex-direction: row; flex-wrap: wrap; }
     .nav-btn { width: auto; }
     .sidebar-bottom { margin-top: 0; margin-left: auto; flex-direction: row; }
+    .user-email { display: none; }
     .main { padding: 1.25rem; }
     .summary-grid { grid-template-columns: 1fr; }
     .two-col { grid-template-columns: 1fr; }
     .cat-sections { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
-    .form-grid label.full { grid-column: span 1; }
+    .form-grid .full { grid-column: span 1; }
     .bar-label { width: 110px; }
     .bar-value { width: 90px; }
   }
-#tx-liquidated:checked + span:first-of-type { background: var(--gold); }
-#tx-liquidated:checked ~ span:last-of-type { transform: translateX(20px); }
 </style>
 </head>
 <body>
-<script>document.documentElement.classList.add('dark');</script>
+<script>
+  (function(){
+    let t = 'dark';
+    try { t = localStorage.getItem('fp-theme') || 'dark'; } catch(e) {}
+    if (t === 'dark') document.documentElement.classList.add('dark');
+  })();
+</script>
 
 <div id="login-screen">
   <div class="login-card">
@@ -159,7 +193,7 @@
       <div class="name">Finance <span>Premium</span></div>
     </div>
     <h2>Bem-vindo</h2>
-    <p>Entre com e-mail e senha para acessar suas finanças.</p>
+    <p id="auth-subtitle">Entre com e-mail e senha para acessar suas finanças.</p>
     <form id="login-form" onsubmit="return handleAuth(event)">
       <div class="form-grid">
         <label class="full">E-mail
@@ -175,7 +209,7 @@
       <div id="auth-msg" class="login-msg"></div>
     </form>
     <p style="margin-top: 1rem; font-size: .8rem;">
-      Não tem conta? <button type="button" onclick="toggleAuthMode()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;">Cadastre-se</button>
+      <span id="auth-toggle-text">Não tem conta?</span> <button type="button" id="auth-toggle-btn" onclick="toggleAuthMode()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;">Cadastre-se</button>
     </p>
   </div>
 </div>
@@ -192,7 +226,8 @@
       <button class="nav-btn" id="nav-categorias" onclick="setPage('categorias')">🏷️ Categorias</button>
     </nav>
     <div class="sidebar-bottom">
-      <button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span> <span id="theme-label">Modo escuro</span></button>
+      <div class="user-email" id="user-email"></div>
+      <button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">☀️</span> <span id="theme-label">Modo claro</span></button>
       <button class="logout-btn" onclick="logout()">Sair</button>
     </div>
   </aside>
@@ -202,11 +237,17 @@
       <div class="page-header">
         <h1>Análise</h1>
         <div class="filter-box">
+          <div class="month-nav">
+            <button class="icon-btn" onclick="shiftMonth(-1)" title="Mês anterior">‹</button>
+            <span id="month-label"></span>
+            <button class="icon-btn" onclick="shiftMonth(1)" title="Próximo mês">›</button>
+          </div>
           <label>Início <input type="date" id="filter-start" onchange="renderDashboard()"></label>
           <label>Fim <input type="date" id="filter-end" onchange="renderDashboard()"></label>
         </div>
       </div>
       <div id="summary-cards" class="summary-grid"></div>
+      <div id="status-cards" class="summary-grid"></div>
       <div class="two-col">
         <div class="card">
           <div class="card-header">
@@ -226,12 +267,33 @@
           <div id="recent-list"></div>
         </div>
       </div>
+      <div class="card" style="margin-top:1.25rem;">
+        <div class="card-header"><h2>⏰ Contas a vencer (próximos 15 dias e atrasadas)</h2></div>
+        <div id="due-list"></div>
+      </div>
     </section>
 
     <section id="page-lancamentos" class="page">
       <div class="page-header">
         <h1>Lançamentos</h1>
-        <button class="btn-gold" onclick="openNewTransaction()">+ Novo lançamento</button>
+        <div class="header-actions">
+          <button class="btn-ghost" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn-gold" onclick="openNewTransaction()">+ Novo lançamento</button>
+        </div>
+      </div>
+      <div class="filter-box" style="margin-bottom:1rem;">
+        <input type="search" id="tx-search" placeholder="🔎 Buscar descrição..." oninput="renderTransactions()" style="min-width:220px;">
+        <select id="tx-f-type" onchange="renderTransactions()">
+          <option value="">Todos os tipos</option>
+          <option value="receita">Receitas</option>
+          <option value="despesa">Despesas</option>
+        </select>
+        <select id="tx-f-status" onchange="renderTransactions()">
+          <option value="">Qualquer status</option>
+          <option value="liquidado">Liquidadas</option>
+          <option value="previsto">Previstas</option>
+          <option value="atrasado">Em atraso</option>
+        </select>
       </div>
       <div class="card table-wrap">
         <table>
@@ -239,6 +301,7 @@
           <tbody id="transactions-body"></tbody>
         </table>
       </div>
+      <div id="tx-footer" class="empty-hint" style="text-align:right;"></div>
     </section>
 
     <section id="page-categorias" class="page">
@@ -278,24 +341,31 @@
           </select>
         </label>
         <label id="field-due-date" style="display:none;">Data de vencimento
-  <input id="tx-due-date" type="date">
-</label>
-
-<label id="field-liquidated" style="display:none;">Status
-  <div style="display:flex;align-items:center;gap:.75rem;margin-top:.25rem;">
-    <span style="font-size:.85rem;color:var(--muted);font-weight:500;">Previsto</span>
-    <label style="position:relative;width:44px;height:24px;cursor:pointer;">
-      <input type="checkbox" id="tx-liquidated" style="opacity:0;width:0;height:0;">
-      <span style="position:absolute;inset:0;background:var(--border);border-radius:999px;transition:.2s;"></span>
-      <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
-    </label>
-    <span style="font-size:.85rem;color:var(--muted);font-weight:500;">Liquidado</span>
-  </div>
-</label>
+          <input id="tx-due-date" type="date">
+        </label>
+        <div class="field" id="field-liquidated" style="display:none;">Status
+          <div class="switch-row">
+            <span style="color:var(--muted)">Previsto</span>
+            <label class="switch">
+              <input type="checkbox" id="tx-liquidated">
+              <span class="track"></span><span class="thumb"></span>
+            </label>
+            <span style="color:var(--muted)">Liquidado</span>
+          </div>
+        </div>
+        <label id="field-repeat" class="">Repetir
+          <select id="tx-repeat" onchange="toggleRepeatCount()">
+            <option value="1">Lançamento único</option>
+            <option value="n">Mensal (parcelas / recorrente)</option>
+          </select>
+        </label>
+        <label id="field-repeat-count" style="display:none;">Quantidade de meses
+          <input id="tx-repeat-count" type="number" min="2" max="60" value="12">
+        </label>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" onclick="closeModal('modal-transaction')">Cancelar</button>
-        <button type="submit" class="btn-gold">Salvar</button>
+        <button type="submit" class="btn-gold" id="tx-save-btn">Salvar</button>
       </div>
     </form>
   </div>
@@ -322,6 +392,8 @@
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
   const SUPABASE_URL = 'https://ryxtudviluqdblttykgv.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eHR1ZHZpbHVxZGJsdHR5a2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTg3NDksImV4cCI6MjEwNjUzNDc0OX0.01k4V3PAVqeFFVEfv-G5oUgEVt8maXqnze_qZ_YsKZ8';
@@ -330,6 +402,7 @@
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let user = null;
+  let appStarted = false;
   let categories = [];
   let transactions = [];
   let chartType = 'despesa';
@@ -342,20 +415,33 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
   const toISODate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayISO = () => toISODate(new Date());
   const fmtDate = (iso) => {
     if (!iso) return '—';
     const [y,m,d] = iso.split('-').map(Number);
     return new Date(y, m-1, d).toLocaleDateString('pt-BR');
   };
+  const addMonths = (iso, n) => {
+    const [y,m,d] = iso.split('-').map(Number);
+    const last = new Date(y, m-1+n+1, 0).getDate();
+    return toISODate(new Date(y, m-1+n, Math.min(d, last)));
+  };
+  const isLate = (t) => t.type === 'despesa' && !t.is_liquidated && (t.due_date || t.date) < todayISO();
 
+  let toastTimer;
+  function toast(msg, isError) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3000);
+  }
+
+  /* ---------- Auth ---------- */
   async function checkSession() {
     const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      user = session.user;
-      showApp();
-    } else {
-      showLogin();
-    }
+    if (session?.user) { user = session.user; showApp(); }
+    else showLogin();
   }
 
   async function handleAuth(e) {
@@ -366,24 +452,14 @@
     const msg = document.getElementById('auth-msg');
     btn.disabled = true;
     msg.textContent = '';
-
     try {
-      let result;
-      if (authMode === 'login') {
-        result = await sb.auth.signInWithPassword({ email, password });
-      } else {
-        result = await sb.auth.signUp({ email, password });
-      }
-
+      const result = authMode === 'login'
+        ? await sb.auth.signInWithPassword({ email, password })
+        : await sb.auth.signUp({ email, password });
       if (result.error) throw result.error;
-
       msg.className = 'login-msg success';
       msg.textContent = authMode === 'login' ? 'Entrando...' : 'Conta criada! Verifique seu e-mail se solicitado.';
-      
-      if (result.data?.session) {
-        user = result.data.session.user;
-        showApp();
-      }
+      if (result.data?.session) { user = result.data.session.user; showApp(); }
     } catch (err) {
       msg.className = 'login-msg error';
       msg.textContent = err.message || 'Erro na autenticação.';
@@ -395,19 +471,20 @@
 
   function toggleAuthMode() {
     authMode = authMode === 'login' ? 'signup' : 'login';
-    document.getElementById('auth-submit').textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
-    document.querySelector('#login-screen p:last-of-type button').textContent = authMode === 'login' ? 'Cadastre-se' : 'Já tenho conta';
-    document.querySelector('#login-screen p:first-of-type').textContent = authMode === 'login' 
-      ? 'Entre com e-mail e senha para acessar suas finanças.' 
+    const login = authMode === 'login';
+    document.getElementById('auth-submit').textContent = login ? 'Entrar' : 'Criar conta';
+    document.getElementById('auth-toggle-btn').textContent = login ? 'Cadastre-se' : 'Já tenho conta';
+    document.getElementById('auth-toggle-text').textContent = login ? 'Não tem conta?' : 'Já possui cadastro?';
+    document.getElementById('auth-subtitle').textContent = login
+      ? 'Entre com e-mail e senha para acessar suas finanças.'
       : 'Crie sua conta para começar a controlar suas finanças.';
     document.getElementById('auth-msg').textContent = '';
   }
 
   async function logout() {
     await sb.auth.signOut();
-    user = null;
-    categories = [];
-    transactions = [];
+    user = null; appStarted = false;
+    categories = []; transactions = [];
     showLogin();
   }
 
@@ -416,30 +493,43 @@
     document.getElementById('app').style.display = 'none';
   }
 
+  function setMonthRange(year, month) {
+    document.getElementById('filter-start').value = toISODate(new Date(year, month, 1));
+    document.getElementById('filter-end').value = toISODate(new Date(year, month + 1, 0));
+  }
+
   async function showApp() {
+    if (appStarted) return; // evita recarregar/resetar filtros em eventos repetidos do Supabase
+    appStarted = true;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    document.getElementById('user-email').textContent = user?.email || '';
     const now = new Date();
-    document.getElementById('filter-start').value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
-    document.getElementById('filter-end').value = toISODate(now);
+    setMonthRange(now.getFullYear(), now.getMonth());
+    syncThemeLabel();
     await loadData();
     renderAll();
   }
 
   async function loadData() {
     const { data: cats, error: errCats } = await sb.from('categories').select('*').order('name');
-    if (errCats) { alert('Erro ao carregar categorias: ' + errCats.message); return; }
+    if (errCats) { toast('Erro ao carregar categorias: ' + errCats.message, true); return; }
     categories = cats || [];
-
     const { data: txs, error: errTxs } = await sb.from('transactions').select('*').order('date', { ascending: false });
-    if (errTxs) { alert('Erro ao carregar lançamentos: ' + errTxs.message); return; }
+    if (errTxs) { toast('Erro ao carregar lançamentos: ' + errTxs.message, true); return; }
     transactions = txs || [];
   }
 
+  /* ---------- Tema / navegação ---------- */
+  function syncThemeLabel() {
+    const isDark = document.documentElement.classList.contains('dark');
+    document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+    document.getElementById('theme-label').textContent = isDark ? 'Modo claro' : 'Modo escuro';
+  }
   function toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark');
-    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
-    document.getElementById('theme-label').textContent = isDark ? 'Modo escuro' : 'Modo claro';
+    try { localStorage.setItem('fp-theme', isDark ? 'dark' : 'light'); } catch(e) {}
+    syncThemeLabel();
   }
 
   function setPage(page) {
@@ -449,6 +539,29 @@
     });
   }
 
+  function shiftMonth(delta) {
+    const startVal = document.getElementById('filter-start').value || todayISO();
+    const [y, m] = startVal.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setMonthRange(d.getFullYear(), d.getMonth());
+    renderDashboard();
+  }
+
+  function updateMonthLabel() {
+    const s = document.getElementById('filter-start').value;
+    const e = document.getElementById('filter-end').value;
+    const label = document.getElementById('month-label');
+    if (s && e) {
+      const [y, m] = s.split('-').map(Number);
+      if (s === toISODate(new Date(y, m-1, 1)) && e === toISODate(new Date(y, m, 0))) {
+        label.textContent = new Date(y, m-1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        return;
+      }
+    }
+    label.textContent = 'Período personalizado';
+  }
+
+  /* ---------- Dashboard ---------- */
   function getFiltered() {
     const start = document.getElementById('filter-start').value || '0000-00-00';
     const end = document.getElementById('filter-end').value || '9999-99-99';
@@ -456,18 +569,29 @@
   }
 
   function renderDashboard() {
+    updateMonthLabel();
     const list = getFiltered();
-    const receitas = list.filter(t => t.type === 'receita').reduce((s,t) => s + Number(t.amount), 0);
-    const despesas = list.filter(t => t.type === 'despesa').reduce((s,t) => s + Number(t.amount), 0);
+    const sum = (arr) => arr.reduce((s,t) => s + Number(t.amount), 0);
+    const receitas = sum(list.filter(t => t.type === 'receita'));
+    const despDocs = list.filter(t => t.type === 'despesa');
+    const despesas = sum(despDocs);
     const saldo = receitas - despesas;
+    const pagas = sum(despDocs.filter(t => t.is_liquidated));
+    const aPagar = sum(despDocs.filter(t => !t.is_liquidated));
+    const atraso = sum(despDocs.filter(isLate));
 
     document.getElementById('summary-cards').innerHTML = `
       <div class="summary-card"><div class="label">Saldo no período</div><div class="value ${saldo >= 0 ? 'positive' : 'negative'}">${fmtMoney(saldo)}</div></div>
       <div class="summary-card"><div class="label">Receitas</div><div class="value positive">${fmtMoney(receitas)}</div></div>
       <div class="summary-card"><div class="label">Despesas</div><div class="value negative">${fmtMoney(despesas)}</div></div>`;
+    document.getElementById('status-cards').innerHTML = `
+      <div class="summary-card small"><div class="label">Despesas pagas</div><div class="value">${fmtMoney(pagas)}</div></div>
+      <div class="summary-card small"><div class="label">A pagar (previsto)</div><div class="value warning">${fmtMoney(aPagar)}</div></div>
+      <div class="summary-card small"><div class="label">Em atraso</div><div class="value ${atraso > 0 ? 'negative' : ''}">${fmtMoney(atraso)}</div></div>`;
 
     renderBarChart();
     renderRecent(list);
+    renderDue();
   }
 
   function setChartType(type) {
@@ -490,9 +614,11 @@
     const arr = Object.values(map).sort((a,b) => b.total - a.total);
     if (!arr.length) { container.innerHTML = '<div class="bar-empty">Nenhum lançamento neste período.</div>'; return; }
     const max = Math.max(...arr.map(a => a.total));
+    const total = arr.reduce((s,a) => s + a.total, 0);
     container.innerHTML = arr.map(a => {
       const pct = max > 0 ? Math.max(4, (a.total/max)*100) : 4;
-      return `<div class="bar-row"><div class="bar-label" title="${esc(a.name)}"><span class="icon">${esc(a.icon)}</span>${esc(a.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${esc(a.color)}"></div></div><div class="bar-value">${fmtMoney(a.total)}</div></div>`;
+      const share = total > 0 ? Math.round(a.total / total * 100) : 0;
+      return `<div class="bar-row"><div class="bar-label" title="${esc(a.name)}"><span class="icon">${esc(a.icon)}</span>${esc(a.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${esc(a.color)}"></div></div><div class="bar-value" title="${share}% do total">${fmtMoney(a.total)}</div></div>`;
     }).join('');
   }
 
@@ -506,23 +632,125 @@
       const icon = cat?.icon || (t.type === 'receita' ? '↑' : '↓');
       const cls = t.type === 'receita' ? 'income' : 'expense';
       const sign = t.type === 'receita' ? '+' : '−';
-      return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta">${fmtDate(t.date)} · ${esc(t.payment)}</div></div></div><div class="recent-amount ${cls}">${sign} ${fmtMoney(t.amount)}</div></div>`;
+      return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div style="min-width:0"><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta">${fmtDate(t.date)} · ${esc(t.payment)}</div></div></div><div class="recent-amount ${cls}">${sign} ${fmtMoney(t.amount)}</div></div>`;
     }).join('');
   }
 
-  function renderTransactions() {
-  const tbody = document.getElementById('transactions-body');
-  const sorted = [...transactions].sort((a,b) => b.date.localeCompare(a.date));
-  if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-hint" style="text-align:center">Nenhum lançamento registrado.</td></tr>'; return; }
-  tbody.innerHTML = sorted.map(t => {
-    const cat = categories.find(c => c.id === t.category_id);
-    const color = cat?.color || '#6b7280';
-    const icon = cat?.icon || '•';
-    const isIncome = t.type === 'receita';
-    return `<tr><td>${fmtDate(t.date)}${t.type === 'despesa' && t.due_date ? `<br><small style="color:var(--gold)">Venc: ${fmtDate(t.due_date)}</small>` : ''}${t.type === 'despesa' ? `<br><span class="tx-type-badge ${t.is_liquidated ? 'income' : 'expense'}">${t.is_liquidated ? '✓ Liquidado' : '○ Previsto'}</span>` : ''}</td><td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td><td><span class="cat-pill"><span class="cat-dot" style="background:${esc(color)}"></span>${esc(icon)} ${esc(cat?.name||'Sem categoria')}</span></td><td>${esc(t.payment)}</td><td style="text-align:right;font-weight:700;color:${isIncome?'var(--positive)':'var(--negative)'}">${isIncome?'+':'−'} ${fmtMoney(t.amount)}</td><td style="text-align:right"><div class="actions" style="justify-content:flex-end"><button class="icon-btn" onclick="openEditTransaction('${t.id}')">✎</button><button class="icon-btn danger" onclick="deleteTransaction('${t.id}')">🗑</button></div></td></tr>`;
-  }).join('');
-}
+  function renderDue() {
+    const container = document.getElementById('due-list');
+    const today = todayISO();
+    const limit = toISODate(new Date(Date.now() + 15 * 864e5));
+    const list = transactions
+      .filter(t => t.type === 'despesa' && !t.is_liquidated && t.due_date && t.due_date <= limit)
+      .sort((a,b) => a.due_date.localeCompare(b.due_date))
+      .slice(0, 8);
+    if (!list.length) { container.innerHTML = '<div class="empty-hint">🎉 Nenhuma conta pendente nos próximos dias.</div>'; return; }
+    container.innerHTML = list.map(t => {
+      const cat = categories.find(c => c.id === t.category_id);
+      const color = cat?.color || '#6b7280';
+      const icon = cat?.icon || '↓';
+      let metaCls = '', meta = 'Vence em ' + fmtDate(t.due_date);
+      if (t.due_date < today) { metaCls = 'late'; meta = 'Atrasada · venceu em ' + fmtDate(t.due_date); }
+      else if (t.due_date === today) { metaCls = 'today'; meta = 'Vence hoje'; }
+      return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div style="min-width:0"><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta ${metaCls}">${meta}</div></div></div><div class="due-right"><div class="recent-amount expense">− ${fmtMoney(t.amount)}</div><button class="btn-sm" onclick="markPaid('${t.id}')">✓ Pagar</button></div></div>`;
+    }).join('');
+  }
 
+  /* ---------- Lançamentos ---------- */
+  function getTxList() {
+    const q = (document.getElementById('tx-search').value || '').trim().toLowerCase();
+    const type = document.getElementById('tx-f-type').value;
+    const status = document.getElementById('tx-f-status').value;
+    return [...transactions]
+      .filter(t => !q || (t.description || '').toLowerCase().includes(q))
+      .filter(t => !type || t.type === type)
+      .filter(t => {
+        if (!status) return true;
+        if (status === 'liquidado') return t.type === 'despesa' && t.is_liquidated;
+        if (status === 'previsto') return t.type === 'despesa' && !t.is_liquidated;
+        if (status === 'atrasado') return isLate(t);
+        return true;
+      })
+      .sort((a,b) => b.date.localeCompare(a.date));
+  }
+
+  function renderTransactions() {
+    const tbody = document.getElementById('transactions-body');
+    const sorted = getTxList();
+    const footer = document.getElementById('tx-footer');
+    if (!sorted.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-hint" style="text-align:center">Nenhum lançamento encontrado.</td></tr>';
+      footer.textContent = '';
+      return;
+    }
+    const total = sorted.reduce((s,t) => s + (t.type === 'receita' ? 1 : -1) * Number(t.amount), 0);
+    footer.innerHTML = `${sorted.length} lançamento(s) · Resultado: <strong style="color:${total >= 0 ? 'var(--positive)' : 'var(--negative)'}">${fmtMoney(total)}</strong>`;
+
+    tbody.innerHTML = sorted.map(t => {
+      const cat = categories.find(c => c.id === t.category_id);
+      const color = cat?.color || '#6b7280';
+      const icon = cat?.icon || '•';
+      const isIncome = t.type === 'receita';
+      const late = isLate(t);
+      const statusBadge = t.type === 'despesa'
+        ? `<br><span class="tx-type-badge ${t.is_liquidated ? 'income' : late ? 'late' : 'expense'}">${t.is_liquidated ? '✓ Liquidado' : late ? '⚠ Em atraso' : '○ Previsto'}</span>` : '';
+      const due = t.type === 'despesa' && t.due_date ? `<br><small style="color:var(--gold)">Venc: ${fmtDate(t.due_date)}</small>` : '';
+      const payBtn = t.type === 'despesa' && !t.is_liquidated ? `<button class="icon-btn ok" title="Marcar como liquidado" onclick="markPaid('${t.id}')">✓</button>` : '';
+      return `<tr>
+        <td>${fmtDate(t.date)}${due}${statusBadge}</td>
+        <td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td>
+        <td><span class="cat-pill"><span class="cat-dot" style="background:${esc(color)}"></span>${esc(icon)} ${esc(cat?.name||'Sem categoria')}</span></td>
+        <td>${esc(t.payment)}</td>
+        <td style="text-align:right;font-weight:700;color:${isIncome?'var(--positive)':'var(--negative)'}">${isIncome?'+':'−'} ${fmtMoney(t.amount)}</td>
+        <td style="text-align:right"><div class="actions" style="justify-content:flex-end">${payBtn}<button class="icon-btn" title="Duplicar" onclick="duplicateTransaction('${t.id}')">⧉</button><button class="icon-btn" title="Editar" onclick="openEditTransaction('${t.id}')">✎</button><button class="icon-btn danger" title="Excluir" onclick="deleteTransaction('${t.id}')">🗑</button></div></td></tr>`;
+    }).join('');
+  }
+
+  function exportCSV() {
+    const list = getTxList();
+    if (!list.length) { toast('Nada para exportar.', true); return; }
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['Data','Vencimento','Descrição','Tipo','Categoria','Pagamento','Valor','Status']];
+    list.forEach(t => {
+      const cat = categories.find(c => c.id === t.category_id);
+      rows.push([
+        fmtDate(t.date), t.due_date ? fmtDate(t.due_date) : '', t.description, t.type,
+        cat?.name || 'Sem categoria', t.payment, String(Number(t.amount).toFixed(2)).replace('.', ','),
+        t.type === 'despesa' ? (t.is_liquidated ? 'Liquidado' : 'Previsto') : ''
+      ]);
+    });
+    const csv = '\uFEFF' + rows.map(r => r.map(q).join(';')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `lancamentos-${todayISO()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('CSV exportado.');
+  }
+
+  async function markPaid(id) {
+    const { data, error } = await sb.from('transactions').update({ is_liquidated: true }).eq('id', id).select().single();
+    if (error) { toast('Erro: ' + error.message, true); return; }
+    const idx = transactions.findIndex(t => t.id === id);
+    if (idx >= 0) transactions[idx] = data;
+    renderAll();
+    toast('Marcado como liquidado ✓');
+  }
+
+  async function duplicateTransaction(id) {
+    const t = transactions.find(t => t.id === id);
+    if (!t) return;
+    const payload = {
+      description: t.description, amount: t.amount, date: t.date, type: t.type, payment: t.payment,
+      category_id: t.category_id, user_id: user.id, due_date: t.due_date, is_liquidated: false
+    };
+    const { data, error } = await sb.from('transactions').insert(payload).select().single();
+    if (error) { toast('Erro ao duplicar: ' + error.message, true); return; }
+    transactions.push(data);
+    renderAll();
+    toast('Lançamento duplicado.');
+  }
+
+  /* ---------- Categorias ---------- */
   function renderCategories() {
     const render = (type, el) => {
       const list = categories.filter(c => c.type === type);
@@ -538,11 +766,15 @@
 
   function renderAll() { renderDashboard(); renderTransactions(); renderCategories(); updateCategorySelect(); }
 
+  /* ---------- Modais ---------- */
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
   document.querySelectorAll('.modal-overlay').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
   });
 
   function setFormType(type) {
@@ -551,15 +783,21 @@
     document.getElementById('tx-type-despesa').className = type === 'despesa' ? 'active-expense' : '';
     updateCategorySelect();
     const show = type === 'despesa';
-  document.getElementById('field-due-date').style.display = show ? '' : 'none';
-  document.getElementById('field-liquidated').style.display = show ? '' : 'none';
+    document.getElementById('field-due-date').style.display = show ? '' : 'none';
+    document.getElementById('field-liquidated').style.display = show ? '' : 'none';
   }
 
   function updateCategorySelect(selectedId) {
     const sel = document.getElementById('tx-category');
+    const current = selectedId ?? sel.value;
     const cats = categories.filter(c => c.type === formType);
     sel.innerHTML = '<option value="">Sem categoria</option>' + cats.map(c => `<option value="${c.id}">${esc(c.icon||'•')} ${esc(c.name)}</option>`).join('');
-    if (selectedId) sel.value = selectedId;
+    if (current && cats.some(c => c.id === current)) sel.value = current;
+  }
+
+  function toggleRepeatCount() {
+    document.getElementById('field-repeat-count').style.display =
+      document.getElementById('tx-repeat').value === 'n' ? '' : 'none';
   }
 
   function openNewTransaction() {
@@ -567,13 +805,20 @@
     document.getElementById('tx-modal-title').textContent = 'Novo lançamento';
     document.getElementById('tx-desc').value = '';
     document.getElementById('tx-amount').value = '';
-    document.getElementById('tx-date').value = toISODate(new Date());
+    document.getElementById('tx-date').value = todayISO();
     document.getElementById('tx-payment').value = 'Pix';
+    document.getElementById('tx-due-date').value = '';
+    document.getElementById('tx-liquidated').checked = false;
+    document.getElementById('tx-repeat').value = '1';
+    document.getElementById('tx-repeat-count').value = 12;
+    document.getElementById('tx-category').value = '';
+    document.getElementById('field-repeat').style.display = '';
+    toggleRepeatCount();
     setFormType('receita');
     openModal('modal-transaction');
   }
 
-  async function openEditTransaction(id) {
+  function openEditTransaction(id) {
     const t = transactions.find(t => t.id === id);
     if (!t) return;
     editingTransactionId = id;
@@ -582,46 +827,72 @@
     document.getElementById('tx-amount').value = t.amount;
     document.getElementById('tx-date').value = t.date;
     document.getElementById('tx-payment').value = t.payment;
+    document.getElementById('tx-due-date').value = t.due_date || '';
+    document.getElementById('tx-liquidated').checked = !!t.is_liquidated;
+    document.getElementById('field-repeat').style.display = 'none';
+    document.getElementById('field-repeat-count').style.display = 'none';
+    document.getElementById('tx-repeat').value = '1';
     setFormType(t.type);
     updateCategorySelect(t.category_id);
-  document.getElementById('tx-due-date').value = t.due_date || '';
-  document.getElementById('tx-liquidated').checked = t.is_liquidated || false;
     openModal('modal-transaction');
   }
 
   async function deleteTransaction(id) {
     if (!confirm('Excluir este lançamento?')) return;
     const { error } = await sb.from('transactions').delete().eq('id', id);
-    if (error) { alert('Erro ao excluir: ' + error.message); return; }
+    if (error) { toast('Erro ao excluir: ' + error.message, true); return; }
     transactions = transactions.filter(t => t.id !== id);
     renderAll();
+    toast('Lançamento excluído.');
   }
 
   async function saveTransaction(e) {
     e.preventDefault();
-    const payload = {
-  description: document.getElementById('tx-desc').value.trim(),
-  amount: parseFloat(document.getElementById('tx-amount').value),
-  date: document.getElementById('tx-date').value,
-  type: formType,
-  payment: document.getElementById('tx-payment').value,
-  category_id: document.getElementById('tx-category').value || null,
-  user_id: user.id,
-  due_date: formType === 'despesa' ? document.getElementById('tx-due-date').value || null : null,
-  is_liquidated: formType === 'despesa' ? document.getElementById('tx-liquidated').checked : false
-};
-    if (editingTransactionId) {
-      const { data, error } = await sb.from('transactions').update(payload).eq('id', editingTransactionId).select().single();
-      if (error) { alert('Erro ao atualizar: ' + error.message); return false; }
-      const idx = transactions.findIndex(t => t.id === editingTransactionId);
-      if (idx >= 0) transactions[idx] = data;
-    } else {
-      const { data, error } = await sb.from('transactions').insert(payload).select().single();
-      if (error) { alert('Erro ao salvar: ' + error.message); return false; }
-      transactions.push(data);
+    const btn = document.getElementById('tx-save-btn');
+    btn.disabled = true;
+    try {
+      const isExpense = formType === 'despesa';
+      const base = {
+        description: document.getElementById('tx-desc').value.trim(),
+        amount: parseFloat(document.getElementById('tx-amount').value),
+        date: document.getElementById('tx-date').value,
+        type: formType,
+        payment: document.getElementById('tx-payment').value,
+        category_id: document.getElementById('tx-category').value || null,
+        user_id: user.id,
+        due_date: isExpense ? (document.getElementById('tx-due-date').value || null) : null,
+        is_liquidated: isExpense ? document.getElementById('tx-liquidated').checked : false
+      };
+
+      if (editingTransactionId) {
+        const { data, error } = await sb.from('transactions').update(base).eq('id', editingTransactionId).select().single();
+        if (error) { toast('Erro ao atualizar: ' + error.message, true); return false; }
+        const idx = transactions.findIndex(t => t.id === editingTransactionId);
+        if (idx >= 0) transactions[idx] = data;
+        toast('Lançamento atualizado.');
+      } else {
+        const repeat = document.getElementById('tx-repeat').value === 'n';
+        const count = repeat ? Math.min(60, Math.max(2, parseInt(document.getElementById('tx-repeat-count').value) || 2)) : 1;
+        const rows = [];
+        for (let i = 0; i < count; i++) {
+          rows.push({
+            ...base,
+            description: count > 1 ? `${base.description} (${i+1}/${count})` : base.description,
+            date: addMonths(base.date, i),
+            due_date: base.due_date ? addMonths(base.due_date, i) : null,
+            is_liquidated: i === 0 ? base.is_liquidated : false
+          });
+        }
+        const { data, error } = await sb.from('transactions').insert(rows).select();
+        if (error) { toast('Erro ao salvar: ' + error.message, true); return false; }
+        transactions.push(...(data || []));
+        toast(count > 1 ? `${count} lançamentos criados.` : 'Lançamento salvo.');
+      }
+      closeModal('modal-transaction');
+      renderAll();
+    } finally {
+      btn.disabled = false;
     }
-    closeModal('modal-transaction');
-    renderAll();
     return false;
   }
 
@@ -645,7 +916,7 @@
     openModal('modal-category');
   }
 
-  async function openEditCategory(id) {
+  function openEditCategory(id) {
     const c = categories.find(c => c.id === id);
     if (!c) return;
     editingCategoryId = id;
@@ -661,10 +932,11 @@
     const c = categories.find(c => c.id === id);
     if (!c || !confirm(`Excluir "${c.name}"?`)) return;
     const { error } = await sb.from('categories').delete().eq('id', id);
-    if (error) { alert('Erro ao excluir: ' + error.message); return; }
+    if (error) { toast('Erro ao excluir: ' + error.message, true); return; }
     categories = categories.filter(x => x.id !== id);
     transactions.forEach(t => { if (t.category_id === id) t.category_id = null; });
     renderAll();
+    toast('Categoria excluída.');
   }
 
   async function saveCategory(e) {
@@ -678,26 +950,27 @@
     };
     if (editingCategoryId) {
       const { data, error } = await sb.from('categories').update(payload).eq('id', editingCategoryId).select().single();
-      if (error) { alert('Erro ao atualizar: ' + error.message); return false; }
+      if (error) { toast('Erro ao atualizar: ' + error.message, true); return false; }
       const idx = categories.findIndex(c => c.id === editingCategoryId);
       if (idx >= 0) categories[idx] = data;
     } else {
       const { data, error } = await sb.from('categories').insert(payload).select().single();
-      if (error) { alert('Erro ao salvar: ' + error.message); return false; }
+      if (error) { toast('Erro ao salvar: ' + error.message, true); return false; }
       categories.push(data);
     }
     closeModal('modal-category');
     renderAll();
+    toast('Categoria salva.');
     return false;
   }
 
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       user = session.user;
-      showApp();
+      showApp(); // ignorado se o app já foi iniciado
     }
     if (event === 'SIGNED_OUT') {
-      user = null;
+      user = null; appStarted = false;
       showLogin();
     }
   });
