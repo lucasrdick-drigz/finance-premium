@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><script src="https://myhub.ia.br/canvas-vendor/tailwind.js"></script> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finance Premium</title>
@@ -115,6 +115,7 @@
   .cat-info { flex: 1; min-width: 0; }
   .cat-name { font-weight: 700; font-size: .95rem; }
   .cat-type { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .cat-sub { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
   .empty-hint { color: var(--muted); font-size: .9rem; padding: 1rem 0; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
   .modal-overlay.open { display: flex; }
@@ -134,7 +135,6 @@
   .type-toggle button.active-expense { background: rgba(220,38,38,.15); color: var(--negative); }
   .modal-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }
 
-  /* Switch Previsto/Liquidado */
   .switch-row { display: flex; align-items: center; gap: .75rem; margin-top: .25rem; font-size: .85rem; font-weight: 500; }
   .switch { position: relative; width: 44px; height: 24px; cursor: pointer; display: inline-block; }
   .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
@@ -143,7 +143,6 @@
   .switch input:checked ~ .track { background: var(--gold); }
   .switch input:checked ~ .thumb { transform: translateX(20px); }
 
-  /* Toast */
   #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--card); color: var(--text); border: 1px solid var(--gold); border-left-width: 4px; padding: .8rem 1.2rem; border-radius: .8rem; box-shadow: var(--shadow); font-size: .9rem; font-weight: 600; z-index: 100; opacity: 0; transform: translateY(10px); pointer-events: none; transition: all .25s; max-width: 320px; }
   #toast.show { opacity: 1; transform: none; }
   #toast.error { border-color: var(--negative); }
@@ -224,6 +223,7 @@
       <button class="nav-btn active" id="nav-analise" onclick="setPage('analise')">📊 Análise</button>
       <button class="nav-btn" id="nav-lancamentos" onclick="setPage('lancamentos')">💸 Lançamentos</button>
       <button class="nav-btn" id="nav-categorias" onclick="setPage('categorias')">🏷️ Categorias</button>
+      <button class="nav-btn" id="nav-pagamentos" onclick="setPage('pagamentos')">💳 Pagamentos</button>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-email" id="user-email"></div>
@@ -314,6 +314,16 @@
         <div class="card"><h2>💸 Despesas</h2><div id="cat-despesas" class="cat-grid"></div></div>
       </div>
     </section>
+
+    <section id="page-pagamentos" class="page">
+      <div class="page-header">
+        <h1>Formas de pagamento</h1>
+        <button class="btn-gold" onclick="openNewPayment()">+ Nova forma</button>
+      </div>
+      <div class="card">
+        <div id="pm-list" class="cat-grid" style="margin-top:0"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -331,14 +341,7 @@
         <label>Data<input id="tx-date" type="date" required></label>
         <label>Categoria<select id="tx-category"></select></label>
         <label>Forma de pagamento
-          <select id="tx-payment">
-            <option value="Pix">Pix</option>
-            <option value="Cartão de Crédito">Cartão de Crédito</option>
-            <option value="Cartão de Débito">Cartão de Débito</option>
-            <option value="Dinheiro">Dinheiro</option>
-            <option value="Transferência">Transferência</option>
-            <option value="Boleto">Boleto</option>
-          </select>
+          <select id="tx-payment" onchange="onPaymentChange()"></select>
         </label>
         <label id="field-due-date" style="display:none;">Data de vencimento
           <input id="tx-due-date" type="date">
@@ -392,6 +395,38 @@
   </div>
 </div>
 
+<!-- Fica DEPOIS do modal de lançamento para abrir por cima dele -->
+<div id="modal-payment" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header"><h2 id="pm-modal-title">Nova forma de pagamento</h2><button class="modal-close" onclick="closeModal('modal-payment')">✕</button></div>
+    <form onsubmit="return savePayment(event)">
+      <div class="form-grid">
+        <label class="full">Nome<input id="pm-name" type="text" maxlength="50" placeholder="Ex.: Nubank, Itaú Visa..." required></label>
+        <label class="full">Tipo
+          <select id="pm-type" onchange="togglePmCredit()">
+            <option value="credit">Cartão de crédito</option>
+            <option value="debit">Cartão de débito</option>
+            <option value="pix">Pix</option>
+            <option value="cash">Dinheiro</option>
+            <option value="other">Outro (boleto, transferência...)</option>
+          </select>
+        </label>
+        <div id="pm-credit-fields" style="display:contents;">
+          <label>Últimos 4 dígitos<input id="pm-last" type="text" inputmode="numeric" maxlength="4" placeholder="1234"></label>
+          <label>Limite (R$)<input id="pm-limit" type="number" step="0.01" min="0"></label>
+          <label>Dia de fechamento<input id="pm-closing" type="number" min="1" max="31"></label>
+          <label>Dia de vencimento<input id="pm-due" type="number" min="1" max="31"></label>
+        </div>
+      </div>
+      <p class="empty-hint" style="margin-top:.75rem;">🔒 Nunca informe o número completo, a validade ou o CVV do cartão.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-payment')">Cancelar</button>
+        <button type="submit" class="btn-gold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -405,12 +440,23 @@
   let appStarted = false;
   let categories = [];
   let transactions = [];
+  let paymentMethods = [];
   let chartType = 'despesa';
   let formType = 'receita';
   let catFormType = 'receita';
   let editingTransactionId = null;
   let editingCategoryId = null;
+  let editingPaymentId = null;
+  let paymentFromTx = false;
+  let lastPaymentValue = '';
   let authMode = 'login';
+
+  const PM_DEFAULTS = [
+    ['Pix', 'pix'], ['Cartão de Crédito', 'credit'], ['Cartão de Débito', 'debit'],
+    ['Dinheiro', 'cash'], ['Transferência', 'other'], ['Boleto', 'other']
+  ];
+  const PM_ICONS = { credit: '💳', debit: '💳', pix: '⚡', cash: '💵', other: '🧾' };
+  const PM_LABELS = { credit: 'Cartão de crédito', debit: 'Cartão de débito', pix: 'Pix', cash: 'Dinheiro', other: 'Outro' };
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
@@ -427,6 +473,12 @@
     return toISODate(new Date(y, m-1+n, Math.min(d, last)));
   };
   const isLate = (t) => t.type === 'despesa' && !t.is_liquidated && (t.due_date || t.date) < todayISO();
+
+  // Nome da forma de pagamento: usa o cadastro atual; se não existir, o texto antigo do lançamento
+  const payName = (t) => {
+    const pm = paymentMethods.find(p => p.id === t.payment_method_id);
+    return pm ? pm.name : (t.payment || '—');
+  };
 
   let toastTimer;
   function toast(msg, isError) {
@@ -484,7 +536,7 @@
   async function logout() {
     await sb.auth.signOut();
     user = null; appStarted = false;
-    categories = []; transactions = [];
+    categories = []; transactions = []; paymentMethods = [];
     showLogin();
   }
 
@@ -499,7 +551,7 @@
   }
 
   async function showApp() {
-    if (appStarted) return; // evita recarregar/resetar filtros em eventos repetidos do Supabase
+    if (appStarted) return;
     appStarted = true;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -515,9 +567,22 @@
     const { data: cats, error: errCats } = await sb.from('categories').select('*').order('name');
     if (errCats) { toast('Erro ao carregar categorias: ' + errCats.message, true); return; }
     categories = cats || [];
+
     const { data: txs, error: errTxs } = await sb.from('transactions').select('*').order('date', { ascending: false });
     if (errTxs) { toast('Erro ao carregar lançamentos: ' + errTxs.message, true); return; }
     transactions = txs || [];
+
+    const { data: pms, error: errPms } = await sb.from('payment_methods').select('*').order('created_at');
+    if (errPms) { toast('Erro ao carregar formas de pagamento: ' + errPms.message, true); return; }
+    paymentMethods = pms || [];
+
+    // Primeiro acesso: cria as formas padrão
+    if (!paymentMethods.length) {
+      const rows = PM_DEFAULTS.map(([name, type]) => ({ name, type, user_id: user.id }));
+      const { data: seeded, error: errSeed } = await sb.from('payment_methods').insert(rows).select();
+      if (errSeed) { toast('Erro ao criar formas padrão: ' + errSeed.message, true); return; }
+      paymentMethods = (seeded || []).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    }
   }
 
   /* ---------- Tema / navegação ---------- */
@@ -533,7 +598,7 @@
   }
 
   function setPage(page) {
-    ['analise','lancamentos','categorias'].forEach(p => {
+    ['analise','lancamentos','categorias','pagamentos'].forEach(p => {
       document.getElementById('page-' + p).classList.toggle('active', p === page);
       document.getElementById('nav-' + p).classList.toggle('active', p === page);
     });
@@ -632,7 +697,7 @@
       const icon = cat?.icon || (t.type === 'receita' ? '↑' : '↓');
       const cls = t.type === 'receita' ? 'income' : 'expense';
       const sign = t.type === 'receita' ? '+' : '−';
-      return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div style="min-width:0"><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta">${fmtDate(t.date)} · ${esc(t.payment)}</div></div></div><div class="recent-amount ${cls}">${sign} ${fmtMoney(t.amount)}</div></div>`;
+      return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div style="min-width:0"><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta">${fmtDate(t.date)} · ${esc(payName(t))}</div></div></div><div class="recent-amount ${cls}">${sign} ${fmtMoney(t.amount)}</div></div>`;
     }).join('');
   }
 
@@ -700,7 +765,7 @@
         <td>${fmtDate(t.date)}${due}${statusBadge}</td>
         <td><strong>${esc(t.description)}</strong><br><span class="tx-type-badge ${isIncome?'income':'expense'}">${isIncome?'↑ Receita':'↓ Despesa'}</span></td>
         <td><span class="cat-pill"><span class="cat-dot" style="background:${esc(color)}"></span>${esc(icon)} ${esc(cat?.name||'Sem categoria')}</span></td>
-        <td>${esc(t.payment)}</td>
+        <td>${esc(payName(t))}</td>
         <td style="text-align:right;font-weight:700;color:${isIncome?'var(--positive)':'var(--negative)'}">${isIncome?'+':'−'} ${fmtMoney(t.amount)}</td>
         <td style="text-align:right"><div class="actions" style="justify-content:flex-end">${payBtn}<button class="icon-btn" title="Duplicar" onclick="duplicateTransaction('${t.id}')">⧉</button><button class="icon-btn" title="Editar" onclick="openEditTransaction('${t.id}')">✎</button><button class="icon-btn danger" title="Excluir" onclick="deleteTransaction('${t.id}')">🗑</button></div></td></tr>`;
     }).join('');
@@ -715,7 +780,7 @@
       const cat = categories.find(c => c.id === t.category_id);
       rows.push([
         fmtDate(t.date), t.due_date ? fmtDate(t.due_date) : '', t.description, t.type,
-        cat?.name || 'Sem categoria', t.payment, String(Number(t.amount).toFixed(2)).replace('.', ','),
+        cat?.name || 'Sem categoria', payName(t), String(Number(t.amount).toFixed(2)).replace('.', ','),
         t.type === 'despesa' ? (t.is_liquidated ? 'Liquidado' : 'Previsto') : ''
       ]);
     });
@@ -740,7 +805,8 @@
     const t = transactions.find(t => t.id === id);
     if (!t) return;
     const payload = {
-      description: t.description, amount: t.amount, date: t.date, type: t.type, payment: t.payment,
+      description: t.description, amount: t.amount, date: t.date, type: t.type,
+      payment: payName(t), payment_method_id: t.payment_method_id,
       category_id: t.category_id, user_id: user.id, due_date: t.due_date, is_liquidated: false
     };
     const { data, error } = await sb.from('transactions').insert(payload).select().single();
@@ -764,7 +830,159 @@
     render('despesa', document.getElementById('cat-despesas'));
   }
 
-  function renderAll() { renderDashboard(); renderTransactions(); renderCategories(); updateCategorySelect(); }
+  /* ---------- Formas de pagamento ---------- */
+  function renderPayments() {
+    const el = document.getElementById('pm-list');
+    if (!paymentMethods.length) {
+      el.innerHTML = '<div class="empty-hint">Nenhuma forma de pagamento cadastrada.</div>';
+      return;
+    }
+    el.innerHTML = paymentMethods.map(p => {
+      const used = transactions.filter(t => t.payment_method_id === p.id).length;
+      const parts = [PM_LABELS[p.type] || 'Outro'];
+      if (p.type === 'credit') {
+        if (p.last_digits) parts.push('•••• ' + p.last_digits);
+        if (p.credit_limit) parts.push('Limite ' + fmtMoney(p.credit_limit));
+        if (p.closing_day) parts.push('Fecha dia ' + p.closing_day);
+        if (p.due_day) parts.push('Vence dia ' + p.due_day);
+      }
+      parts.push(used + ' lançamento(s)');
+      return `<div class="cat-card">
+        <div class="cat-icon" style="background:var(--gold-soft);color:var(--gold)">${PM_ICONS[p.type] || '🧾'}</div>
+        <div class="cat-info"><div class="cat-name">${esc(p.name)}</div><div class="cat-sub">${esc(parts.join(' · '))}</div></div>
+        <div class="actions"><button class="icon-btn" title="Editar" onclick="openEditPayment('${p.id}')">✎</button><button class="icon-btn danger" title="Excluir" onclick="deletePayment('${p.id}')">🗑</button></div>
+      </div>`;
+    }).join('');
+  }
+
+  function updatePaymentSelect(selectedId, legacyName) {
+    const sel = document.getElementById('tx-payment');
+    const current = selectedId !== undefined ? selectedId : sel.value;
+    sel.innerHTML = '';
+    const hasMatch = paymentMethods.some(p => p.id === current);
+    if (legacyName && !hasMatch) sel.add(new Option(legacyName, ''));
+    paymentMethods.forEach(p => {
+      sel.add(new Option(p.name + (p.type === 'credit' && p.last_digits ? ' •••• ' + p.last_digits : ''), p.id));
+    });
+    sel.add(new Option('➕ Nova forma de pagamento...', '__new__'));
+    if (hasMatch) sel.value = current;
+    else if (!legacyName && paymentMethods.length) sel.value = paymentMethods[0].id;
+    lastPaymentValue = sel.value;
+  }
+
+  function onPaymentChange() {
+    const sel = document.getElementById('tx-payment');
+    if (sel.value === '__new__') {
+      sel.value = lastPaymentValue;
+      openNewPayment(true);
+    } else {
+      lastPaymentValue = sel.value;
+    }
+  }
+
+  function togglePmCredit() {
+    document.getElementById('pm-credit-fields').style.display =
+      document.getElementById('pm-type').value === 'credit' ? 'contents' : 'none';
+  }
+
+  function openNewPayment(fromTx) {
+    editingPaymentId = null;
+    paymentFromTx = fromTx === true;
+    document.getElementById('pm-modal-title').textContent = 'Nova forma de pagamento';
+    document.getElementById('pm-name').value = '';
+    document.getElementById('pm-type').value = 'credit';
+    document.getElementById('pm-last').value = '';
+    document.getElementById('pm-limit').value = '';
+    document.getElementById('pm-closing').value = '';
+    document.getElementById('pm-due').value = '';
+    togglePmCredit();
+    openModal('modal-payment');
+  }
+
+  function openEditPayment(id) {
+    const p = paymentMethods.find(x => x.id === id);
+    if (!p) return;
+    editingPaymentId = id;
+    paymentFromTx = false;
+    document.getElementById('pm-modal-title').textContent = 'Editar forma de pagamento';
+    document.getElementById('pm-name').value = p.name;
+    document.getElementById('pm-type').value = p.type;
+    document.getElementById('pm-last').value = p.last_digits || '';
+    document.getElementById('pm-limit').value = p.credit_limit ?? '';
+    document.getElementById('pm-closing').value = p.closing_day ?? '';
+    document.getElementById('pm-due').value = p.due_day ?? '';
+    togglePmCredit();
+    openModal('modal-payment');
+  }
+
+  async function savePayment(e) {
+    e.preventDefault();
+    const type = document.getElementById('pm-type').value;
+    const isCredit = type === 'credit';
+    const day = (v) => {
+      const n = parseInt(v);
+      return n >= 1 && n <= 31 ? n : null;
+    };
+    const last = document.getElementById('pm-last').value.replace(/\D/g, '').slice(0, 4);
+    const payload = {
+      name: document.getElementById('pm-name').value.trim(),
+      type,
+      last_digits: isCredit && last.length === 4 ? last : null,
+      credit_limit: isCredit ? (parseFloat(document.getElementById('pm-limit').value) || null) : null,
+      closing_day: isCredit ? day(document.getElementById('pm-closing').value) : null,
+      due_day: isCredit ? day(document.getElementById('pm-due').value) : null,
+      user_id: user.id
+    };
+    if (!payload.name) { toast('Informe o nome.', true); return false; }
+
+    let saved;
+    if (editingPaymentId) {
+      const { data, error } = await sb.from('payment_methods').update(payload).eq('id', editingPaymentId).select().single();
+      if (error) { toast('Erro ao atualizar: ' + error.message, true); return false; }
+      saved = data;
+      const idx = paymentMethods.findIndex(p => p.id === editingPaymentId);
+      const oldName = idx >= 0 ? paymentMethods[idx].name : null;
+      if (idx >= 0) paymentMethods[idx] = data;
+      // Se renomeou, atualiza também o texto gravado nos lançamentos vinculados
+      if (oldName && oldName !== data.name) {
+        await sb.from('transactions').update({ payment: data.name }).eq('payment_method_id', data.id);
+        transactions.forEach(t => { if (t.payment_method_id === data.id) t.payment = data.name; });
+      }
+    } else {
+      const { data, error } = await sb.from('payment_methods').insert(payload).select().single();
+      if (error) { toast('Erro ao salvar: ' + error.message, true); return false; }
+      saved = data;
+      paymentMethods.push(data);
+    }
+
+    closeModal('modal-payment');
+    renderAll();
+    if (paymentFromTx) updatePaymentSelect(saved.id);
+    paymentFromTx = false;
+    toast('Forma de pagamento salva.');
+    return false;
+  }
+
+  async function deletePayment(id) {
+    const p = paymentMethods.find(x => x.id === id);
+    if (!p) return;
+    const used = transactions.filter(t => t.payment_method_id === id).length;
+    const msg = used
+      ? `"${p.name}" tem ${used} lançamento(s). Eles continuam no histórico com esse nome. Excluir mesmo assim?`
+      : `Excluir "${p.name}"?`;
+    if (!confirm(msg)) return;
+    const { error } = await sb.from('payment_methods').delete().eq('id', id);
+    if (error) { toast('Erro ao excluir: ' + error.message, true); return; }
+    paymentMethods = paymentMethods.filter(x => x.id !== id);
+    transactions.forEach(t => { if (t.payment_method_id === id) { t.payment = p.name; t.payment_method_id = null; } });
+    renderAll();
+    toast('Forma de pagamento excluída.');
+  }
+
+  function renderAll() {
+    renderDashboard(); renderTransactions(); renderCategories(); renderPayments();
+    updateCategorySelect(); updatePaymentSelect();
+  }
 
   /* ---------- Modais ---------- */
   function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -806,7 +1024,8 @@
     document.getElementById('tx-desc').value = '';
     document.getElementById('tx-amount').value = '';
     document.getElementById('tx-date').value = todayISO();
-    document.getElementById('tx-payment').value = 'Pix';
+    const pix = paymentMethods.find(p => p.type === 'pix') || paymentMethods[0];
+    updatePaymentSelect(pix ? pix.id : '');
     document.getElementById('tx-due-date').value = '';
     document.getElementById('tx-liquidated').checked = false;
     document.getElementById('tx-repeat').value = '1';
@@ -826,7 +1045,11 @@
     document.getElementById('tx-desc').value = t.description;
     document.getElementById('tx-amount').value = t.amount;
     document.getElementById('tx-date').value = t.date;
-    document.getElementById('tx-payment').value = t.payment;
+    // Procura pelo id; se não houver, tenta pelo nome antigo; se ainda não, mostra o texto antigo como opção
+    let pm = paymentMethods.find(p => p.id === t.payment_method_id)
+          || paymentMethods.find(p => p.name === t.payment);
+    if (pm) updatePaymentSelect(pm.id);
+    else updatePaymentSelect('', t.payment || 'Sem forma de pagamento');
     document.getElementById('tx-due-date').value = t.due_date || '';
     document.getElementById('tx-liquidated').checked = !!t.is_liquidated;
     document.getElementById('field-repeat').style.display = 'none';
@@ -852,12 +1075,16 @@
     btn.disabled = true;
     try {
       const isExpense = formType === 'despesa';
+      const paySel = document.getElementById('tx-payment');
+      const pm = paymentMethods.find(p => p.id === paySel.value);
+      const payText = pm ? pm.name : (paySel.options[paySel.selectedIndex]?.text || '');
       const base = {
         description: document.getElementById('tx-desc').value.trim(),
         amount: parseFloat(document.getElementById('tx-amount').value),
         date: document.getElementById('tx-date').value,
         type: formType,
-        payment: document.getElementById('tx-payment').value,
+        payment: payText,
+        payment_method_id: pm ? pm.id : null,
         category_id: document.getElementById('tx-category').value || null,
         user_id: user.id,
         due_date: isExpense ? (document.getElementById('tx-due-date').value || null) : null,
@@ -967,7 +1194,7 @@
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       user = session.user;
-      showApp(); // ignorado se o app já foi iniciado
+      showApp();
     }
     if (event === 'SIGNED_OUT') {
       user = null; appStarted = false;
