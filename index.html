@@ -158,6 +158,11 @@
   .login-msg.error { color: var(--negative); }
   .login-msg.success { color: var(--positive); }
 
+    /* Evita scroll horizontal nos modais */
+  .modal-card { overflow-x: hidden; }
+  .form-grid > * { min-width: 0; }
+  .form-grid input, .form-grid select { width: 100%; min-width: 0; max-width: 100%; }
+
   @media (max-width: 900px) {
     #app { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; flex-wrap: wrap; padding: .8rem 1rem; }
