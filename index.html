@@ -429,7 +429,7 @@
 
 <div id="toast"></div>
 
-<script>
+  <script>
   const SUPABASE_URL = 'https://ryxtudviluqdblttykgv.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eHR1ZHZpbHVxZGJsdHR5a2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTg3NDksImV4cCI6MjEwNjUzNDc0OX0.01k4V3PAVqeFFVEfv-G5oUgEVt8maXqnze_qZ_YsKZ8';
 
@@ -450,6 +450,7 @@
   let paymentFromTx = false;
   let lastPaymentValue = '';
   let authMode = 'login';
+  let payChartType = 'despesa';
 
   const PM_DEFAULTS = [
     ['Pix', 'pix'], ['Cartão de Crédito', 'credit'], ['Cartão de Débito', 'debit'],
@@ -655,6 +656,7 @@
       <div class="summary-card small"><div class="label">Em atraso</div><div class="value ${atraso > 0 ? 'negative' : ''}">${fmtMoney(atraso)}</div></div>`;
 
     renderBarChart();
+    renderPayChart();
     renderRecent(list);
     renderDue();
   }
@@ -719,6 +721,81 @@
       else if (t.due_date === today) { metaCls = 'today'; meta = 'Vence hoje'; }
       return `<div class="recent-item"><div class="recent-info"><div class="recent-icon" style="background:${esc(color)}22;color:${esc(color)}">${esc(icon)}</div><div style="min-width:0"><div class="recent-desc">${esc(t.description)}</div><div class="recent-meta ${metaCls}">${meta}</div></div></div><div class="due-right"><div class="recent-amount expense">− ${fmtMoney(t.amount)}</div><button class="btn-sm" onclick="markPaid('${t.id}')">✓ Pagar</button></div></div>`;
     }).join('');
+  }
+
+  /* ---------- Gráfico por forma de pagamento ---------- */
+  const PAY_COLORS = ['#d4af37','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#14b8a6','#ec4899','#84cc16','#64748b'];
+
+  function ensurePayChartCard() {
+    if (document.getElementById('pay-chart-card')) return;
+    const style = document.createElement('style');
+    style.textContent = `
+      .pay-wrap { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+      .pay-donut { width: 200px; height: 200px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .pay-hole { width: 128px; height: 128px; border-radius: 50%; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: .5rem; }
+      .pay-hole span { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+      .pay-hole strong { font-size: .95rem; }
+      .pay-legend { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: .6rem; }
+      .pay-item { display: flex; align-items: center; gap: .6rem; font-size: .9rem; }
+      .pay-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+      .pay-name { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .pay-pct { color: var(--muted); font-size: .8rem; width: 52px; text-align: right; }
+      .pay-val { font-weight: 700; width: 110px; text-align: right; white-space: nowrap; }
+    `;
+    document.head.appendChild(style);
+    const anchor = document.getElementById('due-list').closest('.card');
+    anchor.insertAdjacentHTML('beforebegin', `
+      <div class="card" id="pay-chart-card" style="margin-top:1.25rem;">
+        <div class="card-header">
+          <h2>💳 Movimentação por forma de pagamento</h2>
+          <div class="segmented">
+            <button id="pay-btn-despesa" class="active" onclick="setPayChartType('despesa')">Despesas</button>
+            <button id="pay-btn-receita" onclick="setPayChartType('receita')">Receitas</button>
+          </div>
+        </div>
+        <div id="pay-chart"></div>
+      </div>`);
+  }
+
+  function setPayChartType(type) {
+    payChartType = type;
+    renderPayChart();
+  }
+
+  function renderPayChart() {
+    ensurePayChartCard();
+    document.getElementById('pay-btn-despesa').classList.toggle('active', payChartType === 'despesa');
+    document.getElementById('pay-btn-receita').classList.toggle('active', payChartType === 'receita');
+    const el = document.getElementById('pay-chart');
+    const map = {};
+    getFiltered().filter(t => t.type === payChartType).forEach(t => {
+      const name = payName(t);
+      map[name] = (map[name] || 0) + Number(t.amount);
+    });
+    const arr = Object.entries(map).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total);
+    if (!arr.length) { el.innerHTML = '<div class="bar-empty">Nenhum lançamento neste período.</div>'; return; }
+    const total = arr.reduce((s, a) => s + a.total, 0);
+    let acc = 0;
+    const stops = arr.map((a, i) => {
+      const start = acc / total * 100;
+      acc += a.total;
+      a.color = PAY_COLORS[i % PAY_COLORS.length];
+      return `${a.color} ${start}% ${acc / total * 100}%`;
+    });
+    el.innerHTML = `
+      <div class="pay-wrap">
+        <div class="pay-donut" style="background:conic-gradient(${stops.join(',')})">
+          <div class="pay-hole"><span>Total</span><strong>${fmtMoney(total)}</strong></div>
+        </div>
+        <div class="pay-legend">${arr.map(a => `
+          <div class="pay-item">
+            <span class="pay-dot" style="background:${a.color}"></span>
+            <span class="pay-name" title="${esc(a.name)}">${esc(a.name)}</span>
+            <span class="pay-pct">${(a.total / total * 100).toFixed(1).replace('.', ',')}%</span>
+            <span class="pay-val">${fmtMoney(a.total)}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
   }
 
   /* ---------- Lançamentos ---------- */
