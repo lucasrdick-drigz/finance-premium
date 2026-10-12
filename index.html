@@ -344,7 +344,7 @@
         <label class="full">Descrição<input id="tx-desc" type="text" required></label>
         <label>Valor (R$)<input id="tx-amount" type="number" step="0.01" min="0.01" required></label>
         <label>Data<input id="tx-date" type="date" required></label>
-        <label>Categoria<select id="tx-category"></select></label>
+        <label>Categoria<select id="tx-category" onchange="onCategoryChange()"></select></label>
         <label>Forma de pagamento
           <select id="tx-payment" onchange="onPaymentChange()"></select>
         </label>
@@ -456,6 +456,8 @@
   let lastPaymentValue = '';
   let authMode = 'login';
   let payChartType = 'despesa';
+  let catFromTx = false;
+  let lastCategoryValue = '';
 
   const PM_DEFAULTS = [
     ['Pix', 'pix'], ['Cartão de Crédito', 'credit'], ['Cartão de Débito', 'debit'],
@@ -1091,10 +1093,22 @@
     const sel = document.getElementById('tx-category');
     const current = selectedId ?? sel.value;
     const cats = categories.filter(c => c.type === formType);
-    sel.innerHTML = '<option value="">Sem categoria</option>' + cats.map(c => `<option value="${c.id}">${esc(c.icon||'•')} ${esc(c.name)}</option>`).join('');
+    sel.innerHTML = '<option value="">Sem categoria</option>'
+      + cats.map(c => `<option value="${c.id}">${esc(c.icon||'•')} ${esc(c.name)}</option>`).join('')
+      + '<option value="__new__">➕ Nova categoria...</option>';
     if (current && cats.some(c => c.id === current)) sel.value = current;
+    lastCategoryValue = sel.value === '__new__' ? '' : sel.value;
   }
 
+  function onCategoryChange() {
+    const sel = document.getElementById('tx-category');
+    if (sel.value === '__new__') {
+      sel.value = lastCategoryValue;
+      openNewCategory(true);
+    } else {
+      lastCategoryValue = sel.value;
+    }
+  }
   function toggleRepeatCount() {
     document.getElementById('field-repeat-count').style.display =
       document.getElementById('tx-repeat').value === 'n' ? '' : 'none';
@@ -1216,12 +1230,13 @@
     }
   }
 
-  function openNewCategory() {
+  function openNewCategory(fromTx) {
     editingCategoryId = null;
+    catFromTx = fromTx === true;
     document.getElementById('cat-modal-title').textContent = 'Nova categoria';
     document.getElementById('cat-name').value = '';
     document.getElementById('cat-icon').value = '';
-    setCatType('receita');
+    setCatType(catFromTx ? formType : 'receita');
     openModal('modal-category');
   }
 
@@ -1229,6 +1244,7 @@
     const c = categories.find(c => c.id === id);
     if (!c) return;
     editingCategoryId = id;
+    catFromTx = false;
     document.getElementById('cat-modal-title').textContent = 'Editar categoria';
     document.getElementById('cat-name').value = c.name;
     document.getElementById('cat-color').value = c.color;
@@ -1257,18 +1273,23 @@
       type: catFormType,
       user_id: user.id
     };
+    let saved;
     if (editingCategoryId) {
       const { data, error } = await sb.from('categories').update(payload).eq('id', editingCategoryId).select().single();
       if (error) { toast('Erro ao atualizar: ' + error.message, true); return false; }
       const idx = categories.findIndex(c => c.id === editingCategoryId);
       if (idx >= 0) categories[idx] = data;
+      saved = data;
     } else {
       const { data, error } = await sb.from('categories').insert(payload).select().single();
       if (error) { toast('Erro ao salvar: ' + error.message, true); return false; }
       categories.push(data);
+      saved = data;
     }
     closeModal('modal-category');
     renderAll();
+    if (catFromTx) { setFormType(saved.type); updateCategorySelect(saved.id); }
+    catFromTx = false;
     toast('Categoria salva.');
     return false;
   }
